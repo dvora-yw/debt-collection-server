@@ -1,5 +1,6 @@
 package com.debtcollection.dto.message;
 
+import com.debtcollection.entity.ContactType;
 import com.debtcollection.entity.MessageSource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,5 +15,6 @@ public class MessageViewDto {
     private String content;
     private String senderName;
     private MessageSource source;
+    private ContactType channel;
     private LocalDateTime createdAt;
 }

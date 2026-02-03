@@ -32,7 +32,7 @@ public class ClientController {
     // יצירת לקוח חדש
     // =======================
     @PostMapping("/add")
-    public ResponseEntity<ClientDto> create(@RequestBody ClientDto dto,Authentication authentication) {
+    public ResponseEntity<ClientDto> create(@RequestBody ClientCreateDto dto,Authentication authentication) {
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         Long currentUserId = userDetails.getId();

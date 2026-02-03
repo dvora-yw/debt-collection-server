@@ -2,6 +2,6 @@ package com.debtcollection.entity;
 
 public enum Role {
     ADMIN,
-    CLIENT,
-    END_CLIENT
+    CLIENT_USER,
+    END_CLIENT_USER
 }

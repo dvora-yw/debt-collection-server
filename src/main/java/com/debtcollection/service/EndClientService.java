@@ -1,23 +1,37 @@
 package com.debtcollection.service;
 
+import com.debtcollection.dto.accountBalance.AccountBalanceCreateDto;
+import com.debtcollection.dto.accountBalance.AccountBalanceDto;
 import com.debtcollection.dto.contact.ClientContactDto;
 import com.debtcollection.dto.contactDetail.ContactDetailDto;
 import com.debtcollection.dto.endClient.EndClientCreateDto;
 import com.debtcollection.dto.endClient.EndClientDto;
+import com.debtcollection.dto.endClient.EndClientFinancialSummaryDto;
 import com.debtcollection.dto.endClient.EndClientUpdateDto;
-import com.debtcollection.dto.person.PersonDto;
+import com.debtcollection.dto.payment.PaymentDto;
+import com.debtcollection.dto.paymentCharge.PaymentChargeCreateDto;
+import com.debtcollection.dto.paymentCharge.PaymentChargeDto;
+import com.debtcollection.dto.recurringPaymentDetails.RecurringPaymentDetailsCreateDto;
+import com.debtcollection.dto.recurringPaymentDetails.RecurringPaymentDetailsDto;
+import com.debtcollection.dto.user.UserDto;
 import com.debtcollection.entity.*;
 import com.debtcollection.mapper.EndClientMapper;
+import com.debtcollection.mapper.PaymentMapper;
 import com.debtcollection.repository.*;
+import com.debtcollection.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -27,86 +41,159 @@ public class EndClientService {
 
     private final EndClientRepository endClientRepository;
     private final ClientRepository clientRepository;
-    private final PersonRepository personRepository;
     private final UserRepository userRepository;
     private final EndClientMapper mapper;
     private final JavaMailSender mailSender;
     private final PasswordEncoder passwordEncoder;
     private final ContactDetailRepository contactDetailRepository;
-
-
-
-
+    private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
+    private final DebtNotificationService debtNotificationService;
+    private final PaymentChargeService paymentChargeService;
+    private final PaymentMapper paymentMapper;
+    private final RecurringPaymentDetailsService recurringPaymentService;
+    private final AccountBalanceService accountBalanceService;
 
     // CREATE
     public EndClientDto create(EndClientCreateDto dto) {
 
-        Client client = clientRepository.findById(dto.getClientId())
-                .orElseThrow(() ->
-                        new RuntimeException("Client not found with id " + dto.getClientId())
-                );
 
+        // --- שליפת המשתמש הנוכחי ---
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("No authenticated user found");
+        }
+        CustomUserDetails userDetails =
+                (CustomUserDetails) authentication.getPrincipal();
+
+        Long userId = userDetails.getId();
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found in DB"));
+
+        // --- הכנת רשימת Clients ---
+        Client client = new Client();
+
+        if (dto.getClientId() == null) {
+
+            if (currentUser.getRole() == Role.ADMIN) {
+                throw new RuntimeException("Admin must provide clientIds when creating EndClient");
+            } else {
+                // משתמש רגיל - מוסיפים רק את הלקוח שלו
+                if (currentUser.getClient() == null) {
+                    throw new RuntimeException("Current user is not linked to any client");
+                }
+                Long clientId = currentUser.getClient().getId();
+
+                Client cl = clientRepository.findById(clientId)
+                        .orElseThrow(() -> new RuntimeException("Client not found with id " + clientId));
+                client = cl;
+            }
+
+        } else {
+            // אם נשלחו clientIds ב-DTO
+            client = clientRepository.findById(dto.getClientId())
+                            .orElseThrow(() -> new RuntimeException("Client not found with id " + dto.getClientId()))
+                 ;
+        }
+        Set<Client> clients=new HashSet<>();
+        clients.add(client);
+        // --- יצירת EndClient חדש ---
         EndClient endClient = new EndClient();
-        endClient.setClient(client);
+        endClient.setClients(clients);
         endClient.setName(dto.getName());
         endClient.setTotalDebt(dto.getTotalDebt());
 
         EndClient savedEndClient = endClientRepository.save(endClient);
-        String firstEmail = null;
-        if (dto.getPersons() != null) {
-            for (PersonDto personDto : dto.getPersons()) {
-                Person person = new Person();
-                person.setEndClient(savedEndClient);
-                person.setFirstName(personDto.getFirstName());
-                person.setLastName(personDto.getLastName());
-                Person savedPerson = personRepository.save(person);
-                if (personDto.getContacts() != null) {
-                    for (ContactDetailDto c : personDto.getContacts()) {
-                        if (c.getValue() != null && !c.getValue().trim().isEmpty()) {
-                            ContactDetail cd = new ContactDetail();
-                            cd.setPerson(savedPerson); // רק person, לא client/endClient כדי לא להפר את ה-CK
-                            cd.setType(c.getType());
-                            cd.setValue(c.getValue());
-                            contactDetailRepository.save(cd);
+        // --- יצירת Users ---
+        if (dto.getUsers() != null) {
+            for (UserDto userDto : dto.getUsers()) {
 
-                            if (firstEmail == null
-                                    && c.getType() == ContactType.EMAIL
-                                    && c.getValue() != null
-                                    && !c.getValue().trim().isEmpty()) {
-                                firstEmail = c.getValue().trim();
-                            }
-                        }
-                    }
+                if (userDto.getEmail() == null || userDto.getEmail().isBlank()) continue;
+
+                boolean exists = userRepository.existsByEmailAndEndClientId(
+                        userDto.getEmail().trim(), savedEndClient.getId());
+                if (exists) continue;
+
+                String rawPassword = generateRandomPassword();
+
+                User user = new User();
+                user.setUserName(userDto.getUserName());
+                user.setEmail(userDto.getEmail().trim());
+                user.setPhone(userDto.getPhone().trim());
+                user.setIdentificationNumber(userDto.getIdentificationNumber());
+                user.setPassword(passwordEncoder.encode(rawPassword));
+                user.setEndClient(savedEndClient);
+                user.setRole(Role.END_CLIENT_USER);
+                user.setEnabled(true);
+
+                userRepository.save(user);
+
+                try {
+                    sendCredentialsMail(user.getEmail(), user.getUserName(), rawPassword);
+                } catch (Exception e) {
+                    System.err.println("Failed to send credentials email to " + user.getEmail());
                 }
-            }
-        }
-        if (firstEmail != null) {
-            String username = firstEmail; // או firstEmail + savedEndClient.getId()
-            String rawPassword = generateRandomPassword();
-            String passwordHash = passwordEncoder.encode(rawPassword);
-
-            User user = new User();
-            user.setUserName(username);
-            user.setPassword(passwordHash);
-            user.setEmail(firstEmail);
-            user.setEndClient(savedEndClient);
-            user.setRole(Role.END_CLIENT);
-            user.setEnabled(true);
-            userRepository.save(user);
-
-            try {
-                sendCredentialsMail(firstEmail, username, rawPassword);
-            } catch (Exception e) {
-                System.err.println("Failed to send credentials email to end client: " + e.getMessage());
             }
         } else {
             System.out.println("WARNING: No email found for end client contacts; skipping user creation");
         }
 
+// 1) יתרת זכות התחלתית
+        if (dto.getInitialPrepaidBalance() != null &&
+                dto.getInitialPrepaidBalance().compareTo(BigDecimal.ZERO) > 0) {
+            AccountBalanceCreateDto balanceDto = new AccountBalanceCreateDto(
+                    savedEndClient.getId(),
+                    dto.getInitialPrepaidBalance(),
+                    "ILS",
+                    LocalDate.now(),
+                    LocalDate.now()
+            );
+            accountBalanceService.create(balanceDto);
+        }
+
+// 2) חיוב ראשוני + חיוב מחזורי (אם צריך)
+        if (dto.getInitialChargeAmount() != null) {
+            Long recurringId = null;
+            if ("RECURRING".equalsIgnoreCase(dto.getInitialChargeType())) {
+                RecurringPaymentDetailsCreateDto rpd = new RecurringPaymentDetailsCreateDto(
+                        savedEndClient.getId(),
+                        Optional.ofNullable(dto.getStartDate()).orElse(dto.getInitialChargeDueDate()),
+                        dto.getIntervalValue(),
+                        dto.getIntervalUnit(),
+                        dto.getRecurringEndDate(),
+                        null
+                );
+                RecurringPaymentDetailsDto savedRpd = recurringPaymentService.create(rpd);
+                recurringId = savedRpd.getId();
+            }
+
+            PaymentChargeCreateDto chargeCreate = new PaymentChargeCreateDto();
+            chargeCreate.setEndClientId(savedEndClient.getId());
+            chargeCreate.setAmount(dto.getInitialChargeAmount());
+            chargeCreate.setDueDate(dto.getInitialChargeDueDate());
+            chargeCreate.setStatus("OPEN");
+            chargeCreate.setType(dto.getInitialChargeType());
+            chargeCreate.setRecurringPaymentId(recurringId);
+
+          //  paymentChargeService.create(chargeCreate);
+            // כאן מפעילים את מנגנון ההודעות על החוב החדש
+            PaymentChargeDto savedCharge = paymentChargeService.create(chargeCreate);
+
+            debtNotificationService.onNewDebtCreated(
+                    client,                       // הלקוח (מי שחייבים בשמו)
+                    savedEndClient,               // הלקוח קצה
+                    savedCharge.getId(),          // מזהה החוב/חיוב
+                    savedCharge.getAmount(),      // סכום החוב
+                    savedCharge.getDueDate() != null
+                            ? savedCharge.getDueDate().atStartOfDay()
+                            : java.time.LocalDateTime.now()
+            );
+        }
+
+
+
+
         return mapper.toResponseDto(savedEndClient);
-
-
-
     }
 
     private String generateRandomPassword() {
@@ -139,17 +226,31 @@ public class EndClientService {
                 );
 
         mapper.updateEntityFromDto(dto, entity);
+        // עדכון קשרים ל-Clients חדשים אם נשלחו
+        if (dto.getClientIds() != null) {
+            Set<Client> clients = dto.getClientIds().stream()
+                    .map(cid -> clientRepository.findById(cid)
+                            .orElseThrow(() -> new RuntimeException("Client not found with id " + cid)))
+                    .collect(Collectors.toSet());
 
-        if (dto.getClientId() != null) {
-            Client client = clientRepository.findById(dto.getClientId())
-                    .orElseThrow(() ->
-                            new RuntimeException("Client not found with id " + dto.getClientId())
-                    );
-            entity.setClient(client);
+            entity.setClients(clients);
         }
 
         return mapper.toResponseDto(entity);
     }
+
+    // מחזיר EndClient לפי שם ולקוח
+    @Transactional(readOnly = true)
+    public EndClient findByNameAndClient(String name, Long clientId) {
+        return endClientRepository.findByNameAndClientId(name, clientId).orElse(null);
+    }
+
+    // בודק אם User כבר קיים עבור EndClient ו-email
+    @Transactional(readOnly = true)
+    public boolean userExistsForClientAndEmail(Long clientId, String email) {
+        return userRepository.existsByEmailAndClientId(email, clientId);
+    }
+
 
     // GET ALL
     @Transactional(readOnly = true)
@@ -157,8 +258,9 @@ public class EndClientService {
         return endClientRepository.findAll()
                 .stream()
                 .map(mapper::toResponseDto)
-                .toList();
+                .collect(Collectors.toList());
     }
+
 
     // GET BY ID
     @Transactional(readOnly = true)
@@ -180,4 +282,25 @@ public class EndClientService {
     public void delete(Long id) {
         endClientRepository.deleteById(id);
     }
-}
+    public EndClientFinancialSummaryDto getFinancialSummary(Long endClientId) {
+
+        AccountBalanceDto balance = accountBalanceService.findByEndClientId(endClientId).orElse(null);
+
+        List<RecurringPaymentDetailsDto> recurring =
+                Optional.ofNullable(recurringPaymentService.findByEndClientId(endClientId))
+                        .orElse(Collections.emptyList());
+
+        // כל החיובים הפתוחים עבור הלקוח קצה (כולל חד פעמיים)
+        List<PaymentChargeDto> openCharges =
+                paymentChargeService.findByEndClientIdAndStatus(endClientId, "OPEN");
+        // או אם אין לך שיטה כזו – findByEndClientId() ואז לסנן ל־status OPEN בצד הסרוויס
+
+        List<PaymentDto> recentPayments = Collections.emptyList();
+
+        return new EndClientFinancialSummaryDto(
+                balance,
+                recurring,
+                openCharges,
+                recentPayments
+        );
+    }}

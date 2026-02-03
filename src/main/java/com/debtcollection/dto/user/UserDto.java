@@ -16,4 +16,5 @@ public class UserDto {
     private Boolean emailVerified;
     private Long clientId;
     private Long endClientId;
+    private String identificationNumber;
 }

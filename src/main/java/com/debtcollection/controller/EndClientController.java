@@ -2,6 +2,7 @@ package com.debtcollection.controller;
 
 import com.debtcollection.dto.endClient.EndClientCreateDto;
 import com.debtcollection.dto.endClient.EndClientDto;
+import com.debtcollection.dto.endClient.EndClientFinancialSummaryDto;
 import com.debtcollection.dto.endClient.EndClientUpdateDto;
 import com.debtcollection.service.EndClientService;
 import org.springframework.http.HttpStatus;
@@ -57,5 +58,10 @@ public class EndClientController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @GetMapping("/{id}/financial-summary")
+    public EndClientFinancialSummaryDto getFinancialSummary(@PathVariable Long id) {
+        return service.getFinancialSummary(id);
     }
 }

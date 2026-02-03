@@ -9,7 +9,7 @@ import lombok.Data;
 public class ContactDetailCreateDto {
     private Long clientId;
     private Long endClientId;
-    private Long personId;
+    private Long userId;
     private ContactType type;
     private String value;
 

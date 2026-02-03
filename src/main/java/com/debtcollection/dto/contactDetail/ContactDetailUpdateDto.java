@@ -10,7 +10,7 @@ public class ContactDetailUpdateDto {
 
     private Long clientId;
     private Long endClientId;
-    private Long personId;
+    private Long userId;
     private ContactType type;
     private String value;
 

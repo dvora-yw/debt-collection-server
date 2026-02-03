@@ -8,5 +8,6 @@ import lombok.Data;
 
 public class VerifyEmailRequest {
     private String code;
+    private Long userId;
 
 }

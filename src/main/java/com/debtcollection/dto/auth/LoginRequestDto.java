@@ -10,5 +10,7 @@ public class LoginRequestDto {
     private String email;
     private String password;
     private Boolean remember;
+    private String username;
+    private String nationalId; // לתעודת זהות של לקוח קצה
 
 }

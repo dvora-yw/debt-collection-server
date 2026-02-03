@@ -22,8 +22,8 @@ public class Message {
     private EndClient endClient;
 
     @ManyToOne
-    @JoinColumn(name = "person_id")
-    private Person person;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "client_contact_id")
@@ -33,11 +33,19 @@ public class Message {
     @Column(name = "source", length = 20)
     private MessageSource source;
 
+    @Column(name = "scheduled_at")
+    private LocalDateTime scheduledAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "channel", length = 20, nullable = false)
+    private ContactType channel;
+
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
+    @Column(name = "status")
+    private String status; // SENT / FAILED / DELIVERED
     @PrePersist
     public void onCreate() {
         createdAt = LocalDateTime.now();

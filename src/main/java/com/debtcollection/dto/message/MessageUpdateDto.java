@@ -1,5 +1,6 @@
 package com.debtcollection.dto.message;
 
+import com.debtcollection.entity.ContactType;
 import com.debtcollection.entity.MessageSource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +10,9 @@ import lombok.Data;
 public class MessageUpdateDto {
     private Long clientId;
     private Long endClientId;
-    private Long personId;
+    private Long userId;
     private MessageSource source;
     private String content;
+    private ContactType channel;
 
 }

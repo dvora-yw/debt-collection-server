@@ -15,14 +15,14 @@ public interface MessageMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "client", ignore = true)
     @Mapping(target = "endClient", ignore = true)
-    @Mapping(target = "person", ignore = true)
+    @Mapping(target = "user", ignore = true)
     Message toEntity(MessageCreateDto dto);
 
     // UPDATE
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "client", ignore = true)
     @Mapping(target = "endClient", ignore = true)
-    @Mapping(target = "person", ignore = true)
+    @Mapping(target = "user", ignore = true)
     void updateEntityFromDto(
             MessageUpdateDto dto,
             @MappingTarget Message entity
@@ -31,6 +31,6 @@ public interface MessageMapper {
     // RESPONSE
     @Mapping(source = "client.id", target = "clientId")
     @Mapping(source = "endClient.id", target = "endClientId")
-    @Mapping(source = "person.id", target = "personId")
+    @Mapping(source = "user.id", target = "userId")
     MessageDto toResponseDto(Message entity);
 }

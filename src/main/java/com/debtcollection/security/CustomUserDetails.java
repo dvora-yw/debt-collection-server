@@ -12,6 +12,8 @@ public class CustomUserDetails implements UserDetails {
     private final Long id;
     private final String username;
     private final String password;
+    private final Long clientId;
+
     private final Collection<? extends GrantedAuthority> authorities;
     private final Boolean enabled;
 
@@ -20,8 +22,11 @@ public class CustomUserDetails implements UserDetails {
         this.id = user.getId();
         this.username = user.getUserName();
         this.password = user.getPassword();
+        this.clientId = user.getClient() != null ? user.getClient().getId() : null; // <-- כאן
+
         this.authorities = authorities;
         this.enabled = user.getEnabled();
+
     }
 
 

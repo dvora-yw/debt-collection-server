@@ -11,6 +11,6 @@ public enum EntityType
         NON_PROFIT,            // עמותה / מלכ"ר
         COOPERATIVE,           // אגודה שיתופית
         FOREIGN_COMPANY,       // חברה זרה
-        PRIVATE_PERSON         // אדם פרטי
+        PRIVATE_User         // אדם פרטי
 
 }

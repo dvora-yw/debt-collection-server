@@ -2,6 +2,7 @@ package com.debtcollection.controller;
 
 import com.debtcollection.dto.auth.LoginRequestDto;
 import com.debtcollection.dto.auth.LoginResponseDto;
+import com.debtcollection.dto.auth.ResendCodeRequest;
 import com.debtcollection.dto.auth.VerifyEmailRequest;
 import com.debtcollection.dto.user.UserDto;
 import com.debtcollection.entity.User;
@@ -26,16 +27,17 @@ public class AuthController {
         return ResponseEntity.ok(user);
     }
 
-
     @PostMapping("/verify-email")
     public ResponseEntity<LoginResponseDto> verifyEmail(@RequestBody VerifyEmailRequest req) {
-        LoginResponseDto user = authService.verifyEmail(req.getCode());
+        LoginResponseDto user = authService.verifyCode(req.getUserId(),req.getCode());
         return ResponseEntity.ok(user);
     }
 
     @PostMapping("/resend-code")
-    public ResponseEntity<Void> resendCode(@RequestParam String email) {
-        authService.resendCode(email);
+    public ResponseEntity<Void> resendCode(
+            @RequestBody ResendCodeRequest request) {
+
+        authService.resendCode(request.getUserId());
         return ResponseEntity.ok().build();
     }
 

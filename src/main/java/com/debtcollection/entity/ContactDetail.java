@@ -21,8 +21,8 @@ public class ContactDetail {
     private EndClient endClient;
 
     @ManyToOne
-    @JoinColumn(name = "person_id")
-    private Person person;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", length = 20)

@@ -12,7 +12,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_name", nullable = false, unique = true)
+    @Column(name = "user_name", nullable = false)
     private String userName;
 
     @Column(name = "password", nullable = false)
@@ -25,7 +25,7 @@ public class User {
 
     private Boolean enabled = true;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(name = "created_by")
@@ -35,8 +35,8 @@ public class User {
     @JoinColumn(name = "client_id")
     private Client client;
 
-    @ManyToOne
-    @JoinColumn(name = "end_client_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "end_client_id", nullable = false)
     private EndClient endClient;
 
     @Column(name = "is_email_verified", nullable = false)
@@ -44,4 +44,9 @@ public class User {
 
     @Column(name = "email_verification_code")
     private String emailVerificationCode;
+
+    @Column(name = "identification_number", length = 50)
+    private String identificationNumber;
+
+
 }

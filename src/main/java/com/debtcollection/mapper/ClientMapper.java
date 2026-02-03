@@ -8,20 +8,14 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring", uses = {ClientContactMapper.class})
+@Mapper(componentModel = "spring", uses = {UserMapper.class, ClientContactMapper.class})
 public interface ClientMapper {
-
-    // CREATE - יצירת Client חדש
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "contacts", ignore = true) // נקבע ב-Service
     Client toEntity(ClientCreateDto dto);
 
-    // UPDATE - עדכון Client קיים
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "contacts", ignore = true) // אפשר לעדכן בנפרד
     void updateEntityFromDto(ClientDto dto, @MappingTarget Client entity);
 
-    // RESPONSE - המרת Client ל-ClientDto
-    @Mapping(source = "contacts", target = "contacts")
-    ClientDto toResponseDto(Client entity);
-}
+    // כאן map User -> UserDto
+    @Mapping(target = "users", source = "users")
+    ClientDto toResponseDto(Client entity);}

@@ -7,12 +7,12 @@ import com.debtcollection.dto.message.MessageViewDto;
 import com.debtcollection.entity.Client;
 import com.debtcollection.entity.EndClient;
 import com.debtcollection.entity.Message;
-import com.debtcollection.entity.Person;
+import com.debtcollection.entity.User;
 import com.debtcollection.mapper.MessageMapper;
 import com.debtcollection.repository.ClientRepository;
 import com.debtcollection.repository.EndClientRepository;
 import com.debtcollection.repository.MessageRepository;
-import com.debtcollection.repository.PersonRepository;
+import com.debtcollection.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,20 +25,20 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ClientRepository clientRepository;
     private final EndClientRepository endClientRepository;
-    private final PersonRepository personRepository;
+    private final UserRepository UserRepository;
     private final MessageMapper mapper;
 
     public MessageService(
             MessageRepository messageRepository,
             ClientRepository clientRepository,
             EndClientRepository endClientRepository,
-            PersonRepository personRepository,
+            UserRepository UserRepository,
             MessageMapper mapper
     ) {
         this.messageRepository = messageRepository;
         this.clientRepository = clientRepository;
         this.endClientRepository = endClientRepository;
-        this.personRepository = personRepository;
+        this.UserRepository = UserRepository;
         this.mapper = mapper;
     }
 
@@ -62,12 +62,12 @@ public class MessageService {
             entity.setEndClient(endClient);
         }
 
-        if (dto.getPersonId() != null) {
-            Person person = personRepository.findById(dto.getPersonId())
+        if (dto.getUserId() != null) {
+            User User = UserRepository.findById(dto.getUserId())
                     .orElseThrow(() ->
-                            new RuntimeException("Person not found with id " + dto.getPersonId())
+                            new RuntimeException("User not found with id " + dto.getUserId())
                     );
-            entity.setPerson(person);
+            entity.setUser(User);
         }
 
         return mapper.toResponseDto(messageRepository.save(entity));
@@ -98,12 +98,12 @@ public class MessageService {
             entity.setEndClient(endClient);
         }
 
-        if (dto.getPersonId() != null) {
-            Person person = personRepository.findById(dto.getPersonId())
+        if (dto.getUserId() != null) {
+            User User = UserRepository.findById(dto.getUserId())
                     .orElseThrow(() ->
-                            new RuntimeException("Person not found with id " + dto.getPersonId())
+                            new RuntimeException("User not found with id " + dto.getUserId())
                     );
-            entity.setPerson(person);
+            entity.setUser(User);
         }
 
         return mapper.toResponseDto(entity);

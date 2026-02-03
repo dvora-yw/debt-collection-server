@@ -6,12 +6,12 @@ import com.debtcollection.dto.contactDetail.ContactDetailUpdateDto;
 import com.debtcollection.entity.Client;
 import com.debtcollection.entity.ContactDetail;
 import com.debtcollection.entity.EndClient;
-import com.debtcollection.entity.Person;
+import com.debtcollection.entity.User;
 import com.debtcollection.mapper.ContactDetailMapper;
 import com.debtcollection.repository.ClientRepository;
 import com.debtcollection.repository.ContactDetailRepository;
 import com.debtcollection.repository.EndClientRepository;
-import com.debtcollection.repository.PersonRepository;
+import com.debtcollection.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,29 +24,29 @@ public class ContactDetailService {
     private final ContactDetailRepository contactDetailRepository;
     private final ClientRepository clientRepository;
     private final EndClientRepository endClientRepository;
-    private final PersonRepository personRepository;
+    private final UserRepository UserRepository;
     private final ContactDetailMapper mapper;
 
     public ContactDetailService(
             ContactDetailRepository contactDetailRepository,
             ClientRepository clientRepository,
             EndClientRepository endClientRepository,
-            PersonRepository personRepository,
+            UserRepository UserRepository,
             ContactDetailMapper mapper
     ) {
         this.contactDetailRepository = contactDetailRepository;
         this.clientRepository = clientRepository;
         this.endClientRepository = endClientRepository;
-        this.personRepository = personRepository;
+        this.UserRepository = UserRepository;
         this.mapper = mapper;
     }
 
     // CREATE
     public ContactDetailDto create(ContactDetailCreateDto dto) {
-        validateExactlyOneOwner(dto.getClientId(),dto.getEndClientId(),dto.getPersonId());
+        validateExactlyOneOwner(dto.getClientId(),dto.getEndClientId(),dto.getUserId());
         ContactDetail entity = mapper.toEntity(dto);
 
-        setRelations(entity, dto.getClientId(), dto.getEndClientId(), dto.getPersonId());
+        setRelations(entity, dto.getClientId(), dto.getEndClientId(), dto.getUserId());
 
         return mapper.toResponseDto(contactDetailRepository.save(entity));
     }
@@ -57,9 +57,9 @@ public class ContactDetailService {
                 .orElseThrow(() -> new RuntimeException("ContactDetail not found with id " + id));
 
         mapper.updateEntityFromDto(dto, entity);
-        validateExactlyOneOwner(dto.getClientId(),dto.getEndClientId(),dto.getPersonId());
+        validateExactlyOneOwner(dto.getClientId(),dto.getEndClientId(),dto.getUserId());
 
-        setRelations(entity, dto.getClientId(), dto.getEndClientId(), dto.getPersonId());
+        setRelations(entity, dto.getClientId(), dto.getEndClientId(), dto.getUserId());
 
         return mapper.toResponseDto(entity);
     }
@@ -93,7 +93,7 @@ public class ContactDetailService {
             ContactDetail entity,
             Long clientId,
             Long endClientId,
-            Long personId
+            Long UserId
     ) {
         if (clientId != null) {
             Client client = clientRepository.findById(clientId)
@@ -111,24 +111,24 @@ public class ContactDetailService {
             entity.setEndClient(null);
         }
 
-        if (personId != null) {
-            Person person = personRepository.findById(personId)
-                    .orElseThrow(() -> new RuntimeException("Person not found with id " + personId));
-            entity.setPerson(person);
+        if (UserId != null) {
+            User User = UserRepository.findById(UserId)
+                    .orElseThrow(() -> new RuntimeException("User not found with id " + UserId));
+            entity.setUser(User);
         } else {
-            entity.setPerson(null);
+            entity.setUser(null);
         }
     }
-    private void validateExactlyOneOwner( Long clientId,Long endClientId,Long personId) {
+    private void validateExactlyOneOwner( Long clientId,Long endClientId,Long UserId) {
         int owners = 0;
 
         if (clientId != null) owners++;
         if (endClientId != null) owners++;
-        if (personId != null) owners++;
+        if (UserId != null) owners++;
 
         if (owners != 1) {
             throw new IllegalArgumentException(
-                    "ContactDetail must belong to exactly one owner: client, endClient or person"
+                    "ContactDetail must belong to exactly one owner: client, endClient or User"
             );
         }
     }

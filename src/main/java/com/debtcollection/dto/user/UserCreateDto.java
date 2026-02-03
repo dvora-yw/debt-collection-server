@@ -14,6 +14,7 @@ public class UserCreateDto {
     private Long clientId;
     private Long endClientId;
     private String email;
+    private String identificationNumber;
 
 
 }

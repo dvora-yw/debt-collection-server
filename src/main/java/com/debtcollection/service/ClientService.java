@@ -45,7 +45,7 @@ public class ClientService {
 
     // CREATE
     @Transactional
-    public Client createClient(ClientDto dto,Long currentUserId) {
+    public Client createClient(ClientCreateDto dto,Long currentUserId) {
 
         Client client = new Client();
         client.setName(dto.getName());
@@ -63,23 +63,39 @@ public class ClientService {
         client = clientRepository.save(client);
 
         // 2️⃣ יצירת USER
-        String username = generateUsername(client);
-        String rawPassword = generateRandomPassword();
-        String passwordHash = passwordEncoder.encode(rawPassword);
+        if (dto.getContacts() != null){
+            for (ClientContactDto u : dto.getContacts()) {
+                String username = generateUsername(client);
+                String rawPassword = generateRandomPassword();
+                String passwordHash = passwordEncoder.encode(rawPassword);
+                User user = new User();
+                user.setUserName(u.getFirstName()+" "+u.getLastName());
+                user.setPassword(passwordHash);
+                user.setEmail(u.getEmail());
+                user.setPhone(u.getPhone());
+                user.setClient(client);
+                user.setRole(Role.CLIENT_USER);
+                user.setEnabled(true);
+                user.setCreatedBy(currentUserId);
 
-        //Long currentUserId = SecurityUtils.getCurrentUserId();
+                user = userRepository.save(user);
+                // שליחת מייל - אם נכשל, רק נדפיס לוג אבל לא נפיל את התהליך
+                try {
+                    if(user.getEmail() != null && !user.getEmail().trim().isEmpty()) {
+                        sendCredentialsMail(user.getEmail(), user.getUserName(), rawPassword);
+                    } else {
+                        System.out.println("WARNING: Client has no valid email, skipping credentials mail");
+                    }
+                } catch (Exception e) {
+                    System.err.println("ERROR: Failed to send credentials email: " + e.getMessage());
+                    // לא זורקים exception - אפשר להמשיך
+                }
+            }
+        }
 
-        User user = new User();
-        user.setUserName(username);
-        user.setPassword(passwordHash);
-        user.setEmail(client.getEmail());
-        user.setPhone(client.getPhone());
-        user.setClient(client);
-        user.setRole(Role.CLIENT); // או ENUM
-        user.setEnabled(true);
-        user.setCreatedBy(currentUserId);
 
-        userRepository.save(user);
+
+
 
         if (dto.getContacts() != null) {
             for (ClientContactDto c : dto.getContacts()) {
@@ -90,22 +106,12 @@ public class ClientService {
                 contact.setPhone(c.getPhone());
                 contact.setEmail(c.getEmail());
                 contact.setClient(client); // מחברים ללקוח עם ID תקין
-                client.getContacts().add(contact);
+//                client.getContacts().add(contact);
+                contact = clientContactRepository.save(contact);
             }
         }
         client = clientRepository.save(client);
 
-        // שליחת מייל - אם נכשל, רק נדפיס לוג אבל לא נפיל את התהליך
-        try {
-            if(client.getEmail() != null && !client.getEmail().trim().isEmpty()) {
-                sendCredentialsMail(client.getEmail(), username, rawPassword);
-            } else {
-                System.out.println("WARNING: Client has no valid email, skipping credentials mail");
-            }
-        } catch (Exception e) {
-            System.err.println("ERROR: Failed to send credentials email: " + e.getMessage());
-            // לא זורקים exception - אפשר להמשיך
-        }
 
         return client;
     }
@@ -135,6 +141,7 @@ public class ClientService {
     }
 
     // READ - all
+    @Transactional(readOnly = true)
     public List<ClientDto> getAllClients() {
         return clientRepository.findAll()
                 .stream()

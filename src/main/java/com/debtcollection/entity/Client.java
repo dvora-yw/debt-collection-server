@@ -1,15 +1,21 @@
 package com.debtcollection.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Table(name = "Clients")
 public class Client {
 
@@ -60,12 +66,14 @@ public class Client {
         @Column(name = "payment_terms", length = 50)
         private String paymentTerms;
 
-        @OneToMany(
-                mappedBy = "client",
-                cascade = CascadeType.ALL,
-                orphanRemoval = true
-        )
-        private List<ClientContacts> contacts = new ArrayList<>();
+        @OneToMany(mappedBy = "client")
+        private List<User> users;
+
+        // קשר ללקוחות קצה (דו־כיווני)
+        @ManyToMany(mappedBy = "clients")
+        private Set<EndClient> endClients;
+
+
 
 }
 

@@ -10,11 +10,11 @@ import org.mapstruct.Mapping;
 public interface UserMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "password", ignore = true) // נקבע ב-Service
+    @Mapping(target = "password", ignore = true)
     @Mapping(target = "client", ignore = true)
     @Mapping(target = "endClient", ignore = true)
-
     User toEntity(UserCreateDto dto);
+
     @Mapping(source = "client.id", target = "clientId")
     @Mapping(source = "endClient.id", target = "endClientId")
     UserDto toDto(User user);
