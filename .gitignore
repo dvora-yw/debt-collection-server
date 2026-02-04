@@ -1,5 +1,5 @@
 target/*
-!target/debt-collection-server-0.0.1-SNAPSHOT.jar
+!target/debt-collection-0.0.1-SNAPSHOT.jar
 
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
