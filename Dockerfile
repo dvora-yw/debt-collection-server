@@ -1,23 +1,12 @@
-# Use an official Java runtime as a parent image
+# Dockerfile
 FROM eclipse-temurin:17-jdk-focal
 
-
-# Set the working directory
 WORKDIR /app
 
-# Copy pom.xml and download dependencies
-COPY pom.xml .
-RUN mkdir -p src && echo "" > src/placeholder.txt
-RUN mvn dependency:go-offline
+# העתק את ה-JAR שנבנה
+COPY target/debt-collection-server-0.0.1-SNAPSHOT.jar app.jar
 
-# Copy the project source
-COPY src ./src
-
-# Build the application
-RUN mvn package -DskipTests
-
-# Expose the port your app runs on
 EXPOSE 8080
 
-# Run the app
-CMD ["java", "-jar", "target/debt-collection-0.0.1-SNAPSHOT.jar"]
+# הרץ את השרת
+CMD ["java", "-jar", "app.jar"]
