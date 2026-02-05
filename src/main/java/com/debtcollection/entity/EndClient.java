@@ -13,7 +13,7 @@ import java.util.Set;
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Table(name = "EndClients")
+@Table(name = "\"EndClients\"")
 public class EndClient {
 
     @Id

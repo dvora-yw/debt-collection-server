@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 @Entity
-@Table(name = "ClientNotificationPolicies")
+@Table(name = "\"ClientNotificationPolicies\"")
 public class ClientNotificationPolicy {
 
     @Id
