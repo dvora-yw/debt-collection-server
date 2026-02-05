@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "\"ContactDetails\"")
+@Table(name = "ContactDetails")
 public class ContactDetail {
 
     @Id

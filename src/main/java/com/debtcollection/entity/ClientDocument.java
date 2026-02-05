@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"ClientDocuments\"")
+@Table(name = "ClientDocuments")
 @Data
 public class ClientDocument {
 
